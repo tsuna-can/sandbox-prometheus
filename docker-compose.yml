@@ -1,0 +1,47 @@
+version: '4.8'
+
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: your_root_password
+      MYSQL_DATABASE: your_database
+      MYSQL_USER: your_user
+      MYSQL_PASSWORD: your_password
+    ports:
+      - "3306:3306"
+    networks:
+      - monitoring
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysqld-exporter
+    ports:
+      - "9104:9104"
+    networks:
+      - monitoring
+    depends_on:
+      - mariadb
+    command:
+      - "--mysqld.username=your_user:your_password" # https://github.com/prometheus/mysqld_exporter/issues/750
+      - "--mysqld.address=mariadb:3306"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  mariadb_data:
